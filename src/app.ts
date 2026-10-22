@@ -1,6 +1,7 @@
-import express, { Request, Response, NextFunction, RequestHandler } from 'express';
+import express, { Request, Response, RequestHandler, ErrorRequestHandler } from 'express';
 import { HttpError } from './errors/httpError';
 import { requireServiceKey } from './middleware/requireServiceKey';
+import { resolveRequestId } from './requestId';
 import { booksRouter } from './routes/books';
 import { internalBooksRouter } from './routes/internalBooks';
 
@@ -25,14 +26,19 @@ app.use(serviceKeyGate);
 app.use('/books', booksRouter);
 app.use('/internal/books', internalBooksRouter);
 
-app.use((req: Request, res: Response) => {
-  res.status(404).json({ error: 'Not Found' });
-});
+export const notFoundHandler: RequestHandler = (req, res) => {
+  res.status(404).json({ error: 'Not Found', requestId: resolveRequestId(req) });
+};
 
 // eslint-disable-next-line no-unused-vars
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   const status = err instanceof HttpError ? err.status : 500;
-  res.status(status).json({ error: err.message || 'Internal Server Error' });
-});
+  res
+    .status(status)
+    .json({ error: err.message || 'Internal Server Error', requestId: resolveRequestId(req) });
+};
+
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 export default app;
