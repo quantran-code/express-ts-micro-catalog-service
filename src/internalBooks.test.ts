@@ -131,3 +131,63 @@ describe('internal books service key gate', () => {
     expect(res.body.error).toBe('Invalid service key');
   });
 });
+
+describe('GET /internal/books', () => {
+  it('returns every book as a bare array', async () => {
+    const dune = seedBook(2);
+    const earthsea = createBook({
+      title: 'Earthsea',
+      author: 'Ursula Le Guin',
+      isbn: 'isbn-2',
+      totalCopies: 1,
+    });
+    await request(app).post(`/internal/books/${dune.id}/borrow`).set(withServiceKey);
+
+    const res = await request(app).get('/internal/books').set(withServiceKey);
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body).toHaveLength(2);
+    expect(res.body[0]).toEqual({
+      id: dune.id,
+      title: 'Dune',
+      author: 'Frank Herbert',
+      isbn: 'isbn-1',
+      totalCopies: 2,
+      availableCopies: 1,
+    });
+    expect(res.body[1]).toEqual({
+      id: earthsea.id,
+      title: 'Earthsea',
+      author: 'Ursula Le Guin',
+      isbn: 'isbn-2',
+      totalCopies: 1,
+      availableCopies: 1,
+    });
+  });
+
+  it('returns an empty array when no books exist', async () => {
+    const res = await request(app).get('/internal/books').set(withServiceKey);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it('rejects a missing service key with 401', async () => {
+    seedBook(1);
+
+    const res = await request(app).get('/internal/books');
+
+    expect(res.status).toBe(401);
+    expect(res.body.error).toBe('Invalid service key');
+  });
+
+  it('rejects a wrong service key with 401', async () => {
+    seedBook(1);
+
+    const res = await request(app).get('/internal/books').set({ 'x-service-key': 'wrong-key' });
+
+    expect(res.status).toBe(401);
+    expect(res.body.error).toBe('Invalid service key');
+  });
+});

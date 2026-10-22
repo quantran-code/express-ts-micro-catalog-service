@@ -1,6 +1,6 @@
 import { RequestHandler, Router } from 'express';
 import { HttpError } from '../errors/httpError';
-import { borrowCopy, findBookById, returnCopy } from '../repositories/bookRepository';
+import { borrowCopy, findBookById, listBooks, returnCopy } from '../repositories/bookRepository';
 import type { BookIdParams } from './books';
 
 function parseId(raw: string): number {
@@ -10,6 +10,10 @@ function parseId(raw: string): number {
   }
   return id;
 }
+
+export const listBooksHandler: RequestHandler<Record<string, never>> = (req, res) => {
+  res.status(200).json(listBooks());
+};
 
 export const getInternalBookHandler: RequestHandler<BookIdParams> = (req, res, next) => {
   try {
@@ -57,6 +61,7 @@ export const returnCopyHandler: RequestHandler<BookIdParams> = (req, res, next) 
 
 export const internalBooksRouter = Router();
 
+internalBooksRouter.get('/', listBooksHandler);
 internalBooksRouter.get('/:id', getInternalBookHandler);
 internalBooksRouter.post('/:id/borrow', borrowCopyHandler);
 internalBooksRouter.post('/:id/return', returnCopyHandler);

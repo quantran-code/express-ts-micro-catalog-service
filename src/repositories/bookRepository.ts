@@ -58,6 +58,10 @@ export function findBooksByTitleOrAuthor(query: string): readonly Book[] {
   );
 }
 
+export function listBooks(): readonly Book[] {
+  return books.slice();
+}
+
 export function updateBook(id: number, input: UpdateBookInput): Book | undefined {
   const book = findBookById(id);
   if (book === undefined) {
